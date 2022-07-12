@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { addDays } from "date-fns";
+import dayjs from "dayjs";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import { prisma } from "~/prisma/db";
@@ -29,7 +29,7 @@ export default async function handler(
     where: {
       deleted: false,
       touchedAt: {
-        lte: addDays(new Date(), -30),
+        lte: dayjs().add(-30, "days").toDate(),
       },
     },
   });
@@ -42,36 +42,28 @@ export default async function handler(
           {
             deleted: true,
             deletedAt: {
-              lte: addDays(new Date(), -7),
+              lte: dayjs().add(-7, "days").toDate(),
             },
           },
           // demo polls that are 1 day old
           {
             demo: true,
             createdAt: {
-              lte: addDays(new Date(), -1),
+              lte: dayjs().add(-1, "days").toDate(),
             },
           },
         ],
       },
       select: {
-        urlId: true,
+        id: true,
       },
       orderBy: {
         createdAt: "asc", // oldest first
       },
     })
-  ).map(({ urlId }) => urlId);
+  ).map(({ id }) => id);
 
   if (pollIdsToDelete.length !== 0) {
-    // Delete links
-    await prisma.link.deleteMany({
-      where: {
-        pollId: {
-          in: pollIdsToDelete,
-        },
-      },
-    });
     // Delete comments
     await prisma.comment.deleteMany({
       where: {
@@ -107,9 +99,13 @@ export default async function handler(
       },
     });
 
+    await prisma.$executeRaw`DELETE FROM options WHERE poll_id IN (${Prisma.join(
+      pollIdsToDelete,
+    )})`;
+
     // Delete polls
     // Using execute raw to bypass soft delete middelware
-    await prisma.$executeRaw`DELETE FROM polls WHERE url_id IN (${Prisma.join(
+    await prisma.$executeRaw`DELETE FROM polls WHERE id IN (${Prisma.join(
       pollIdsToDelete,
     )})`;
   }

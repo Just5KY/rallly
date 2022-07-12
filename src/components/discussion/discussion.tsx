@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { formatRelative } from "date-fns";
+import dayjs from "dayjs";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePlausible } from "next-plausible";
 import * as React from "react";
@@ -16,7 +16,6 @@ import NameInput from "../name-input";
 import TruncatedLinkify from "../poll/truncated-linkify";
 import UserAvatar from "../poll/user-avatar";
 import { usePoll } from "../poll-context";
-import { usePreferences } from "../preferences/use-preferences";
 import { isUnclaimed, useSession } from "../session";
 
 interface CommentForm {
@@ -25,11 +24,10 @@ interface CommentForm {
 }
 
 const Discussion: React.VoidFunctionComponent = () => {
-  const { locale } = usePreferences();
   const queryClient = trpc.useContext();
-  const {
-    poll: { pollId },
-  } = usePoll();
+  const { poll } = usePoll();
+
+  const pollId = poll.id;
 
   const { data: comments } = trpc.useQuery(
     ["polls.comments.list", { pollId }],
@@ -52,8 +50,6 @@ const Discussion: React.VoidFunctionComponent = () => {
       plausible("Created comment");
     },
   });
-
-  const { poll } = usePoll();
 
   const deleteComment = trpc.useMutation("polls.comments.delete", {
     onMutate: ({ commentId }) => {
@@ -96,9 +92,7 @@ const Discussion: React.VoidFunctionComponent = () => {
         <AnimatePresence initial={false}>
           {comments.map((comment) => {
             const canDelete =
-              poll.role === "admin" ||
-              session.ownsObject(comment) ||
-              isUnclaimed(comment);
+              poll.admin || session.ownsObject(comment) || isUnclaimed(comment);
 
             return (
               <motion.div
@@ -126,32 +120,25 @@ const Discussion: React.VoidFunctionComponent = () => {
                     <div className="mb-1">
                       <span className="mr-1 text-slate-400">&bull;</span>
                       <span className="text-sm text-slate-500">
-                        {formatRelative(
-                          new Date(comment.createdAt),
-                          Date.now(),
-                          {
-                            locale,
-                          },
-                        )}
+                        {dayjs(new Date(comment.createdAt)).fromNow()}
                       </span>
                     </div>
-                    {canDelete ? (
-                      <Dropdown
-                        placement="bottom-start"
-                        trigger={<CompactButton icon={DotsHorizontal} />}
-                      >
-                        <DropdownItem
-                          icon={Trash}
-                          label="Delete comment"
-                          onClick={() => {
-                            deleteComment.mutate({
-                              commentId: comment.id,
-                              pollId,
-                            });
-                          }}
-                        />
-                      </Dropdown>
-                    ) : null}
+                    <Dropdown
+                      placement="bottom-start"
+                      trigger={<CompactButton icon={DotsHorizontal} />}
+                    >
+                      <DropdownItem
+                        icon={Trash}
+                        label="Delete comment"
+                        disabled={!canDelete}
+                        onClick={() => {
+                          deleteComment.mutate({
+                            commentId: comment.id,
+                            pollId,
+                          });
+                        }}
+                      />
+                    </Dropdown>
                   </div>
                   <div className="w-fit whitespace-pre-wrap">
                     <TruncatedLinkify>{comment.content}</TruncatedLinkify>
@@ -187,11 +174,7 @@ const Discussion: React.VoidFunctionComponent = () => {
               )}
             />
           </div>
-          <Button
-            htmlType="submit"
-            loading={formState.isSubmitting}
-            type="primary"
-          >
+          <Button htmlType="submit" loading={formState.isSubmitting}>
             Comment
           </Button>
         </div>

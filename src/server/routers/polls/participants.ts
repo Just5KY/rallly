@@ -3,7 +3,6 @@ import { z } from "zod";
 import { prisma } from "~/prisma/db";
 
 import { sendNotification } from "../../../utils/api-utils";
-import { createGuestUser } from "../../../utils/auth";
 import { createRouter } from "../../createRouter";
 
 export const participants = createRouter()
@@ -21,7 +20,7 @@ export const participants = createRouter()
         },
         orderBy: [
           {
-            createdAt: "desc",
+            createdAt: "asc",
           },
           { name: "desc" },
         ],
@@ -48,7 +47,7 @@ export const participants = createRouter()
   .mutation("add", {
     input: z.object({
       pollId: z.string(),
-      name: z.string(),
+      name: z.string().nonempty("Participant name is required"),
       votes: z
         .object({
           optionId: z.string(),
@@ -57,22 +56,12 @@ export const participants = createRouter()
         .array(),
     }),
     resolve: async ({ ctx, input: { pollId, votes, name } }) => {
-      if (!ctx.session.user) {
-        await createGuestUser(ctx.session);
-      }
-
+      const user = ctx.session.user;
       const participant = await prisma.participant.create({
         data: {
           pollId: pollId,
           name: name,
-          userId:
-            ctx.session.user?.isGuest === false
-              ? ctx.session.user.id
-              : undefined,
-          guestId:
-            ctx.session.user?.isGuest === true
-              ? ctx.session.user.id
-              : undefined,
+          userId: user.id,
           votes: {
             createMany: {
               data: votes.map(({ optionId, type }) => ({

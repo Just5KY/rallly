@@ -1,31 +1,36 @@
 import { prisma } from "~/prisma/db";
 
+import { createGuestUser } from "../../utils/auth";
 import { createRouter } from "../createRouter";
 
 export const session = createRouter()
   .query("get", {
-    async resolve({ ctx }) {
-      if (ctx.session.user?.isGuest === false) {
-        const user = await prisma.user.findUnique({
-          where: { id: ctx.session.user.id },
-        });
-
-        if (!user) {
-          ctx.session.destroy();
-          return null;
-        }
-
-        ctx.session.user = {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          isGuest: false,
-        };
-
-        await ctx.session.save();
+    async resolve({
+      ctx,
+    }): Promise<
+      | { isGuest: true; id: string }
+      | { isGuest: false; id: string; name: string; email: string }
+    > {
+      if (ctx.session.user.isGuest) {
+        return { isGuest: true, id: ctx.session.user.id };
       }
 
-      return ctx.session.user;
+      const user = await prisma.user.findUnique({
+        where: { id: ctx.session.user.id },
+      });
+
+      if (!user) {
+        ctx.session.user = await createGuestUser();
+        await ctx.session.save();
+        return { isGuest: true, id: ctx.session.user.id };
+      }
+
+      return {
+        isGuest: false,
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      };
     },
   })
   .mutation("destroy", {

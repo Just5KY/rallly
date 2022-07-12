@@ -1,6 +1,6 @@
-import { formatRelative } from "date-fns";
+import dayjs from "dayjs";
+import Head from "next/head";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
 import * as React from "react";
 
@@ -10,6 +10,7 @@ import User from "@/components/icons/user.svg";
 
 import { trpc } from "../utils/trpc";
 import { EmptyState } from "./empty-state";
+import LoginForm from "./login-form";
 import { UserDetails } from "./profile/user-details";
 import { useSession } from "./session";
 
@@ -19,24 +20,27 @@ export const Profile: React.VoidFunctionComponent = () => {
   const { t } = useTranslation("app");
   const { data: userPolls } = trpc.useQuery(["user.getPolls"]);
 
-  const router = useRouter();
   const createdPolls = userPolls?.polls;
 
-  React.useEffect(() => {
-    if (!user) {
-      router.replace("/new");
-    }
-  }, [user, router]);
-
-  if (!user || user.isGuest) {
-    return null;
+  if (user.isGuest) {
+    return (
+      <div className="card my-4 p-0">
+        <Head>
+          <title>Profile - Login</title>
+        </Head>
+        <LoginForm />
+      </div>
+    );
   }
 
   return (
     <div className="mx-auto max-w-3xl py-4 lg:mx-0">
+      <Head>
+        <title>Profile - {user.name}</title>
+      </Head>
       <div className="mb-4 flex items-center px-4">
-        <div className="bg-primary-50 mr-4 inline-flex h-14 w-14 items-center justify-center rounded-lg">
-          <User className="text-primary-500 h-7" />
+        <div className="mr-4 inline-flex h-14 w-14 items-center justify-center rounded-lg bg-primary-50">
+          <User className="h-7 text-primary-500" />
         </div>
         <div>
           <div
@@ -71,15 +75,15 @@ export const Profile: React.VoidFunctionComponent = () => {
                     <div className="sm:table-cell sm:p-4">
                       <div>
                         <div className="flex">
-                          <Calendar className="text-primary-500 mr-2 mt-[1px] h-5" />
-                          <Link href={`/admin/${poll.links[0].urlId}`}>
-                            <a className="hover:text-primary-500 text-slate-700 hover:no-underline">
+                          <Calendar className="mr-2 mt-[1px] h-5 text-primary-500" />
+                          <Link href={`/admin/${poll.adminUrlId}`}>
+                            <a className="text-slate-700 hover:text-primary-500 hover:no-underline">
                               <div>{poll.title}</div>
                             </a>
                           </Link>
                         </div>
                         <div className="ml-7 text-sm text-slate-500">
-                          {formatRelative(poll.createdAt, new Date())}
+                          {dayjs(poll.createdAt).fromNow()}
                         </div>
                       </div>
                     </div>

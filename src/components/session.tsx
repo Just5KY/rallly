@@ -4,26 +4,36 @@ import toast from "react-hot-toast";
 
 import { trpc } from "@/utils/trpc";
 
+import FullPageLoader from "./full-page-loader";
 import { useRequiredContext } from "./use-required-context";
 
 export type UserSessionData = NonNullable<IronSessionData["user"]>;
 
 export type SessionProps = {
-  user: UserSessionData | null;
+  user: UserSessionData;
 };
 
 type ParticipantOrComment = {
   userId: string | null;
-  guestId: string | null;
 };
 
-export type UserSessionDataExtended = UserSessionData & {
-  shortName: string;
-};
+export type UserSessionDataExtended =
+  | {
+      isGuest: true;
+      id: string;
+      shortName: string;
+    }
+  | {
+      isGuest: false;
+      id: string;
+      name: string;
+      shortName: string;
+      email: string;
+    };
 
 type SessionContextValue = {
   logout: () => void;
-  user: UserSessionDataExtended | null;
+  user: UserSessionDataExtended;
   refresh: () => void;
   ownsObject: (obj: ParticipantOrComment) => boolean;
   isLoading: boolean;
@@ -36,35 +46,32 @@ SessionContext.displayName = "SessionContext";
 
 export const SessionProvider: React.VoidFunctionComponent<{
   children?: React.ReactNode;
-  session: UserSessionData | null;
-}> = ({ children, session }) => {
+}> = ({ children }) => {
   const queryClient = trpc.useContext();
-  const {
-    data: user = session,
-    refetch,
-    isLoading,
-  } = trpc.useQuery(["session.get"]);
+  const { data: user, refetch, isLoading } = trpc.useQuery(["session.get"]);
 
   const logout = trpc.useMutation(["session.destroy"], {
     onSuccess: () => {
-      queryClient.setQueryData(["session.get"], null);
+      queryClient.invalidateQueries(["session.get"]);
     },
   });
 
+  if (!user) {
+    return <FullPageLoader>Loading user…</FullPageLoader>;
+  }
+
   const sessionData: SessionContextValue = {
-    user: user
-      ? {
-          ...user,
-          shortName:
-            // try to get the first name in the event
-            // that the user entered a full name
-            user.isGuest
-              ? user.id.substring(0, 12)
-              : user.name.length > 12 && user.name.indexOf(" ") !== -1
-              ? user.name.substring(0, user.name.indexOf(" "))
-              : user.name,
-        }
-      : null,
+    user: {
+      ...user,
+      shortName:
+        // try to get the first name in the event
+        // that the user entered a full name
+        user.isGuest
+          ? user.id.substring(0, 10)
+          : user.name.length > 12 && user.name.indexOf(" ") !== -1
+          ? user.name.substring(0, user.name.indexOf(" "))
+          : user.name,
+    },
     refresh: () => {
       refetch();
     },
@@ -77,14 +84,6 @@ export const SessionProvider: React.VoidFunctionComponent<{
       });
     },
     ownsObject: (obj) => {
-      if (!user) {
-        return false;
-      }
-
-      if (user.isGuest) {
-        return obj.guestId === user.id;
-      }
-
       return obj.userId === user.id;
     },
   };
@@ -106,7 +105,7 @@ export const withSession = <P extends SessionProps>(
   const ComposedComponent: React.VoidFunctionComponent<P> = (props: P) => {
     const Component = component;
     return (
-      <SessionProvider session={props.user}>
+      <SessionProvider>
         <Component {...props} />
       </SessionProvider>
     );
@@ -115,5 +114,4 @@ export const withSession = <P extends SessionProps>(
   return ComposedComponent;
 };
 
-export const isUnclaimed = (obj: ParticipantOrComment) =>
-  !obj.guestId && !obj.userId;
+export const isUnclaimed = (obj: ParticipantOrComment) => !obj.userId;

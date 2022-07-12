@@ -20,7 +20,10 @@ import { useRequiredContext } from "./use-required-context";
 type PollContextValue = {
   userAlreadyVoted: boolean;
   poll: GetPollApiResponse;
+  urlId: string;
+  admin: boolean;
   targetTimeZone: string;
+  participantUrl: string;
   setTargetTimeZone: (timeZone: string) => void;
   pollType: "date" | "timeSlot";
   highScore: number;
@@ -49,16 +52,16 @@ export const usePoll = () => {
 };
 
 export const PollContextProvider: React.VoidFunctionComponent<{
-  value: GetPollApiResponse;
+  poll: GetPollApiResponse;
+  urlId: string;
+  admin: boolean;
   children?: React.ReactNode;
-}> = ({ value: poll, children }) => {
+}> = ({ poll, urlId, admin, children }) => {
   const { participants } = useParticipants();
   const [isDeleted, setDeleted] = React.useState(false);
   const { user } = useSession();
   const [targetTimeZone, setTargetTimeZone] =
     React.useState(getBrowserTimeZone);
-
-  const { locale } = usePreferences();
 
   const getScore = React.useCallback(
     (optionId: string) => {
@@ -83,6 +86,8 @@ export const PollContextProvider: React.VoidFunctionComponent<{
     [participants],
   );
 
+  const { timeFormat } = usePreferences();
+
   const contextValue = React.useMemo<PollContextValue>(() => {
     const highScore = poll.options.reduce((acc, curr) => {
       const score = getScore(curr.id).yes;
@@ -94,7 +99,7 @@ export const PollContextProvider: React.VoidFunctionComponent<{
       poll.options,
       poll.timeZone,
       targetTimeZone,
-      locale,
+      timeFormat,
     );
     const getParticipantById = (participantId: string) => {
       // TODO (Luke Vella) [2022-04-16]: Build an index instead
@@ -105,11 +110,7 @@ export const PollContextProvider: React.VoidFunctionComponent<{
 
     const userAlreadyVoted =
       user && participants
-        ? participants.some((participant) =>
-            user.isGuest
-              ? participant.guestId === user.id
-              : participant.userId === user.id,
-          )
+        ? participants.some((participant) => participant.userId === user.id)
         : false;
 
     const optionIds = parsedOptions.options.map(({ optionId }) => optionId);
@@ -129,10 +130,17 @@ export const PollContextProvider: React.VoidFunctionComponent<{
       );
     });
 
+    const { participantUrlId } = poll;
+
+    const participantUrl = `${window.location.origin}/p/${participantUrlId}`;
+
     return {
       optionIds,
       userAlreadyVoted,
       poll,
+      urlId,
+      admin,
+      participantUrl,
       getParticipantById: (participantId) => {
         return participantById[participantId];
       },
@@ -152,7 +160,17 @@ export const PollContextProvider: React.VoidFunctionComponent<{
       isDeleted,
       setDeleted,
     };
-  }, [getScore, isDeleted, locale, participants, poll, targetTimeZone, user]);
+  }, [
+    admin,
+    getScore,
+    isDeleted,
+    participants,
+    poll,
+    targetTimeZone,
+    timeFormat,
+    urlId,
+    user,
+  ]);
 
   if (isDeleted) {
     return (
