@@ -1,4 +1,4 @@
-FROM node:alpine
+FROM node:slim
 
 RUN mkdir -p /usr/src/app
 ENV PORT 3000
