@@ -1,5 +1,9 @@
 FROM node:slim
 
+
+RUN apt-get update
+RUN apt-get install -y openssl libssl-dev libc6
+
 RUN mkdir -p /usr/src/app
 ENV PORT 3000
 ARG DATABASE_URL
@@ -11,7 +15,7 @@ COPY package.json /usr/src/app
 COPY yarn.lock /usr/src/app
 COPY prisma/schema.prisma /usr/src/app
 
-RUN yarn --frozen-lockfile
+RUN yarn
 
 COPY . /usr/src/app
 
