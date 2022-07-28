@@ -2,12 +2,12 @@ datasource db {
   provider             = "postgresql"
   url                  = env("DATABASE_URL")
   referentialIntegrity = "prisma"
-  binaryTargets = ["native"]
 }
 
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["referentialIntegrity"]
+  binaryTargets = ["native"]
 }
 
 model User {
