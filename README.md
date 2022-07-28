@@ -1,6 +1,7 @@
 [![Actions Status](https://github.com/lukevella/rallly/workflows/ci/badge.svg)](https://github.com/lukevella/rallly/actions)
+[![Crowdin](https://badges.crowdin.net/rallly/localized.svg)](https://crowdin.com/project/rallly)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-orange.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Discord](https://img.shields.io/badge/-Join%20Chat-7289DA?logo=discord&logoColor=white)](https://discord.gg/m5UFXavc2C)
+[![Discord](https://img.shields.io/badge/-Join%20Chat-7289DA?logo=discord&logoColor=white)](https://discord.gg/uzg4ZcHbuM)
 [![Donate](https://img.shields.io/badge/-Donate%20with%20Paypal-white?logo=paypal)](https://www.paypal.com/donate/?hosted_button_id=7QXP2CUBLY88E)
 
 ![hero](./docs/images/hero-image.png)
@@ -93,6 +94,10 @@ yarn start
 
 If you would like to contribute to the development of the project please reach out first before spending significant time on it.
 
+### Translators 🇫🇷 🇩🇪 🇮🇹 🇪🇸
+
+If you'd like to volunteer to translate Rallly to another language, check out our [guide for translators](https://github.com/lukevella/rallly/wiki/Guide-for-translators).
+
 ## 👮‍♂️ License
 
 Rallly is open-source under the GNU Affero General Public License Version 3 (AGPLv3) or any later version. See [LICENSE](LICENSE) for more detail.
@@ -104,6 +109,7 @@ Big thanks to these folks for sponsoring the project!
 <a href="https://github.com/cpnielsen" target="_blank"><img src="https://avatars.githubusercontent.com/u/1258576?v=4" width="32" height="32" /></a>&nbsp;
 <a href="https://github.com/Daedalus3" target="_blank"><img src="https://avatars.githubusercontent.com/u/5649239?v=4" width="32" height="32" /></a>&nbsp;
 <a href="https://github.com/iamericfletcher" target="_blank"><img src="https://avatars.githubusercontent.com/u/64165327?v=4" width="32" height="32" /></a>&nbsp;
+<a href="https://github.com/richb-hanover" target="_blank"><img src="https://avatars.githubusercontent.com/u/1094930?v=4" width="32" height="32" /></a>&nbsp;
 
 And thanks to these companies for providing their services to host and run [rallly.co](https://rallly.co).
 
