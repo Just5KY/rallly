@@ -1,17 +1,14 @@
 import clsx from "clsx";
-import dayjs from "dayjs";
 import React from "react";
 import { Calendar } from "react-big-calendar";
 import { useMount } from "react-use";
 
 import { getDuration } from "../../../utils/date-time-utils";
-import { usePreferences } from "../../preferences/use-preferences";
+import { useDayjs } from "../../../utils/dayjs";
 import DateNavigationToolbar from "./date-navigation-toolbar";
 import dayjsLocalizer from "./dayjs-localizer";
 import { DateTimeOption, DateTimePickerProps } from "./types";
 import { formatDateWithoutTime, formatDateWithoutTz } from "./utils";
-
-const localizer = dayjsLocalizer(dayjs);
 
 const WeekCalendar: React.VoidFunctionComponent<DateTimePickerProps> = ({
   title,
@@ -23,8 +20,9 @@ const WeekCalendar: React.VoidFunctionComponent<DateTimePickerProps> = ({
   onChangeDuration,
 }) => {
   const [scrollToTime, setScrollToTime] = React.useState<Date>();
+  const { dayjs, timeFormat } = useDayjs();
+  const localizer = React.useMemo(() => dayjsLocalizer(dayjs), [dayjs]);
 
-  const { timeFormat } = usePreferences();
   useMount(() => {
     // Bit of a hack to force rbc to scroll to the right time when we close/open a modal
     setScrollToTime(dayjs(date).add(-60, "minutes").toDate());
@@ -66,7 +64,7 @@ const WeekCalendar: React.VoidFunctionComponent<DateTimePickerProps> = ({
         );
       }}
       components={{
-        toolbar: (props) => {
+        toolbar: function Toolbar(props) {
           return (
             <DateNavigationToolbar
               year={props.date.getFullYear()}
@@ -83,7 +81,7 @@ const WeekCalendar: React.VoidFunctionComponent<DateTimePickerProps> = ({
             />
           );
         },
-        eventWrapper: (props) => {
+        eventWrapper: function EventWraper(props) {
           const start = dayjs(props.event.start);
           const end = dayjs(props.event.end);
           return (
@@ -105,7 +103,7 @@ const WeekCalendar: React.VoidFunctionComponent<DateTimePickerProps> = ({
         },
         week: {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          header: ({ date }: any) => {
+          header: function Header({ date }: any) {
             const dateString = formatDateWithoutTime(date);
             const selectedOption = options.find((option) => {
               return option.type === "date" && option.date === dateString;
@@ -143,7 +141,7 @@ const WeekCalendar: React.VoidFunctionComponent<DateTimePickerProps> = ({
             );
           },
         },
-        timeSlotWrapper: ({ children }) => {
+        timeSlotWrapper: function TimeSlotWrapper({ children }) {
           return <div className="h-8 text-xs text-gray-500">{children}</div>;
         },
       }}
