@@ -1,9 +1,8 @@
-binaryTargets = ["native"]
-
 datasource db {
   provider             = "postgresql"
   url                  = env("DATABASE_URL")
   referentialIntegrity = "prisma"
+  binaryTargets = ["native"]
 }
 
 generator client {
