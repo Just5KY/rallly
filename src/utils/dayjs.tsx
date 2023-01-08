@@ -35,20 +35,85 @@ const dayjsLocales: Record<
     timeFormat: "24h",
     import: () => import("dayjs/locale/es"),
   },
+  ca: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/ca"),
+  },
+  da: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/da"),
+  },
   de: {
     weekStartsOn: "monday",
     timeFormat: "24h",
     import: () => import("dayjs/locale/de"),
+  },
+  fi: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/fi"),
   },
   fr: {
     weekStartsOn: "monday",
     timeFormat: "24h",
     import: () => import("dayjs/locale/fr"),
   },
+  it: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/it"),
+  },
   sv: {
     weekStartsOn: "monday",
     timeFormat: "24h",
     import: () => import("dayjs/locale/sv"),
+  },
+  sk: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/sk"),
+  },
+  cs: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/cs"),
+  },
+  pl: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/pl"),
+  },
+  pt: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/pt"),
+  },
+  "pt-BR": {
+    weekStartsOn: "sunday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/pt-br"),
+  },
+  ko: {
+    weekStartsOn: "sunday",
+    timeFormat: "12h",
+    import: () => import("dayjs/locale/ko"),
+  },
+  nl: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/nl"),
+  },
+  hu: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/hu"),
+  },
+  zh: {
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    import: () => import("dayjs/locale/zh"),
   },
 };
 
@@ -84,17 +149,17 @@ export const DayjsProvider: React.VoidFunctionComponent<{
 
   // Using language instead of router.locale because when transitioning from homepage to
   // the app via <Link locale={false}> it will be set to "en" instead of the current locale.
-  const locale = i18n.language;
+  const localeConfig = dayjsLocales[i18n.language];
 
-  const [weekStartsOn = dayjsLocales[locale].weekStartsOn, , setWeekStartsOn] =
+  const [weekStartsOn = localeConfig.weekStartsOn, setWeekStartsOn] =
     useLocalStorage<StartOfWeek>("rallly-week-starts-on");
 
-  const [timeFormat = dayjsLocales[locale].timeFormat, setTimeFormat] =
+  const [timeFormat = localeConfig.timeFormat, setTimeFormat] =
     useLocalStorage<TimeFormat>("rallly-time-format");
 
   const { value: dayjsLocale } = useAsync(async () => {
-    return await dayjsLocales[locale ?? "en"].import();
-  }, [locale]);
+    return await localeConfig.import();
+  }, [localeConfig]);
 
   if (!dayjsLocale) {
     // wait for locale to load before rendering content
@@ -103,19 +168,26 @@ export const DayjsProvider: React.VoidFunctionComponent<{
 
   dayjs.locale({
     ...dayjsLocale,
-    weekStart: weekStartsOn ? (weekStartsOn === "monday" ? 1 : 0) : undefined,
-    formats: {
-      ...dayjsLocale.formats,
-      LT: timeFormat === "12h" ? "h:mm A" : "H:mm",
-    },
+    weekStart: weekStartsOn
+      ? weekStartsOn === "monday"
+        ? 1
+        : 0
+      : dayjsLocale.weekStart,
+    formats:
+      localeConfig.timeFormat !== timeFormat
+        ? {
+            ...dayjsLocale.formats,
+            LT: timeFormat === "12h" ? "h:mm A" : "HH:mm",
+          }
+        : dayjsLocale.formats,
   });
 
   return (
     <DayjsContext.Provider
       value={{
         dayjs,
-        weekStartsOn: weekStartsOn ?? dayjsLocales[locale].weekStartsOn,
-        timeFormat: timeFormat ?? dayjsLocales[locale].timeFormat,
+        weekStartsOn: weekStartsOn ?? localeConfig.weekStartsOn,
+        timeFormat: timeFormat ?? localeConfig.timeFormat,
         setWeekStartsOn,
         setTimeFormat,
       }}

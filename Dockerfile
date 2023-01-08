@@ -1,22 +1,25 @@
-FROM node:alpine
+FROM node:lts as build
 
-RUN mkdir -p /usr/src/app
-ENV PORT 3000
-ARG DATABASE_URL
-ENV DATABASE_URL $DATABASE_URL
+WORKDIR /app
 
-WORKDIR /usr/src/app
+COPY package.json .
+COPY yarn.lock .
+COPY prisma/schema.prisma .
 
-COPY package.json /usr/src/app
-COPY yarn.lock /usr/src/app
-COPY prisma/schema.prisma /usr/src/app
+RUN yarn --frozen-lockfile --no-cache --production
 
-RUN yarn --frozen-lockfile
-
-COPY . /usr/src/app
+COPY . .
 
 RUN yarn build
 
+FROM node:lts
+
+ENV PORT 3000
 EXPOSE 3000
 
-CMD [ "yarn", "start" ]
+WORKDIR /usr/src/app
+
+COPY --from=build /app .
+COPY docker_start.sh .
+
+ENTRYPOINT [ "./docker_start.sh" ]

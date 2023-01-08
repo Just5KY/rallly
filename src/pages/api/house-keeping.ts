@@ -4,6 +4,8 @@ import { NextApiRequest, NextApiResponse } from "next";
 
 import { prisma } from "~/prisma/db";
 
+import { parseValue } from "../../utils/date-time-utils";
+
 /**
  * DANGER: This endpoint will permanently delete polls.
  */
@@ -24,12 +26,33 @@ export default async function handler(
     return;
   }
 
-  // soft delete polls that have not been accessed for over 30 days
-  const inactivePolls = await prisma.poll.deleteMany({
+  // get polls that have not been accessed for over 30 days
+  const inactivePolls = await prisma.$queryRaw<
+    Array<{ id: string; max: string }>
+  >`
+    SELECT polls.id, MAX(options.value) FROM polls
+    JOIN options ON options.poll_id = polls.id
+    WHERE touched_at <= ${dayjs().add(-30, "days").toDate()} AND deleted = false
+    GROUP BY polls.id;
+  `;
+
+  const pollsToSoftDelete: string[] = [];
+
+  // keep polls that have options that are in the future
+  inactivePolls.forEach(({ id, max: value }) => {
+    const parsedValue = parseValue(value);
+    const date =
+      parsedValue.type === "date" ? parsedValue.date : parsedValue.end;
+
+    if (dayjs(date).isBefore(dayjs())) {
+      pollsToSoftDelete.push(id);
+    }
+  });
+
+  const softDeletedPolls = await prisma.poll.deleteMany({
     where: {
-      deleted: false,
-      touchedAt: {
-        lte: dayjs().add(-30, "days").toDate(),
+      id: {
+        in: pollsToSoftDelete,
       },
     },
   });
@@ -73,6 +96,7 @@ export default async function handler(
       },
     });
 
+    // Delete votes
     await prisma.vote.deleteMany({
       where: {
         pollId: {
@@ -99,10 +123,6 @@ export default async function handler(
       },
     });
 
-    await prisma.$executeRaw`DELETE FROM options WHERE poll_id IN (${Prisma.join(
-      pollIdsToDelete,
-    )})`;
-
     // Delete polls
     // Using execute raw to bypass soft delete middelware
     await prisma.$executeRaw`DELETE FROM polls WHERE id IN (${Prisma.join(
@@ -111,7 +131,7 @@ export default async function handler(
   }
 
   res.status(200).json({
-    inactive: inactivePolls.count,
+    softDeleted: softDeletedPolls.count,
     deleted: pollIdsToDelete.length,
   });
 }
