@@ -9,7 +9,7 @@ COPY package.json .
 COPY yarn.lock .
 COPY prisma/schema.prisma .
 
-RUN yarn install
+RUN yarn install --network-timeout 100000
 
 RUN yarn --frozen-lockfile --no-cache --production
 
